@@ -1,6 +1,6 @@
 ---
 title: "Lab 07 - Modelling course evaluations"
-author: "INSERT NAME HERE"
+author: "Freya Maw"
 date: "`r Sys.Date()`"
 output: html_document
 ---
@@ -24,18 +24,61 @@ evals<-read.csv("data/evals.csv", row.names=1)
 1.  Visualize the distribution of `score` in the dataframe `evals`.
 
 ```{r viz-score}
-# add code here
+ggplot(data = evals) +
+  geom_histogram(aes(x = score), binwidth = 0.05)
+
+evals %>%
+  summarise(
+    mean = mean(score),
+    median = median(score)
+  )
+  
+ggplot(
+  data = evals, 
+  mapping = aes(x = score, y = bty_avg)
+  ) +
+  geom_point() 
+
+ggplot(
+  data = evals, 
+  mapping = aes(x = score, y = bty_avg)
+  ) +
+  geom_jitter() 
+
+
 ```
 
-*Add your other details and narratives here.*
+hard to see relationship with geom_point. geom_jitter slightly randomises points so correlation is easier to see
 
 2.  Visualize and describe the relationship between `score` and `bty_avg` using `geom_point()` to represent the data. 
 
 ```{r scatterplot}
-# add code here
+score_bty_fit <- linear_reg() %>%
+  set_engine("lm") %>%
+  fit(score ~ bty_avg, data = evals)
+tidy(score_bty_fit)
+glance(score_bty_fit)$r.squared
+
+ggplot(
+  data = evals,
+  mapping = aes(x = bty_avg, y = score)
+  ) +
+  geom_jitter() +
+  geom_smooth(method = "lm", se = F)
+  
+score_bty_aug <- augment(score_bty_fit$fit)
+names(score_bty_aug)
+
+
+ggplot(score_bty_aug, aes(x = .fitted, y = .resid)) +
+  geom_jitter() +
+  geom_hline(yintercept = 0, linetype = "dashed")
 ```
 
-*Add your narrative and other details here.*
+score = 0.0666*bty_avg + 3.88
+y-intercept = 3.88. When avg beauty = 0, avg score = 3.88
+R^2 = 0.035 (very low!!)
+
 
 # Exercise 2: Simple Linear regression with a numerical predictor
 
@@ -92,15 +135,22 @@ ggplot(___) + ...
 0. Look at the variable rank, and determine the frequency of each category level.
 
 ```{r}
-# ... 
+evals %>%
+  group_by(rank) %>%
+  count()
+
+ggplot(evals) +
+  geom_bar(aes(x = rank))
 ```
 
 1. Fit a new linear model called `score_rank_fit` to predict average professor evaluation `score` based on `rank` of the professor.
 
 ```{r fit-score_rank_fit}
-# fit model
+score_rank_fit <- linear_reg() %>%
+  set_engine("lm") %>%
+  fit(score ~ rank, data = evals)
 
-# tidy model output
+tidy(score_rank_fit)
 ```
 
 *Add your narrative here.*
@@ -108,9 +158,11 @@ ggplot(___) + ...
 2. Fit a new linear model called `score_gender_fit` to predict average professor evaluation `score` based on `gender` of the professor. 
 
 ```{r fit-score_gender_fit}
-# fit model
+score_gender_fit <- linear_reg() %>%
+  set_engine("lm") %>%
+  fit(score ~ gender, data = evals)
 
-# tidy model output
+tidy(score_gender_fit)
 ```
 
 ```{r score_gender_intercept, eval=FALSE}
@@ -136,21 +188,28 @@ score_gender_slope <- tidy(score_gender_fit) %>%
 1. Fit a multiple linear regression model, predicting average professor evaluation `score` based on average beauty rating (`bty_avg`) and `gender.`
 
 ```{r fit-score_bty_gender_fit}
-# fit model
+score_bty_gender_fit <- linear_reg() %>%
+  set_engine("lm") %>%
+  fit(score ~ bty_avg + gender, data = evals)
 
-# tidy model output
+tidy(score_bty_gender_fit)
+
 ```
 
 *Add your narrative here.*
 
 ```{r eval = FALSE}
-ggplot(___) + ...
+ggplot(evals,
+       aes(x = bty_avg, y = score, colour = gender)
+       ) + 
+  geom_jitter() +
+  geom_smooth(method = lm, se = F)
 ```
 
 2. What percent of the variability in `score` is explained by the model `score_bty_gender_fit`. 
 
 ```{r}
-# ...
+glance(score_bty_gender_fit)$r.squared
 ```
 
 
